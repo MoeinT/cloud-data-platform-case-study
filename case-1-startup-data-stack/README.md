@@ -7,44 +7,7 @@
 
 ## 1. Architecture
 
-```mermaid
-flowchart LR
-    subgraph S3RAW["S3 raw bucket (already exists)"]
-        FE["frontend/<br/>clicks, navigation<br/>JSON · dt=YYYY-MM-DD"]
-        BE["backend/<br/>API calls, errors<br/>JSON · dt=YYYY-MM-DD"]
-    end
-
-    subgraph WH["Data warehouse: S3 + Apache Iceberg + Glue Data Catalog, queried by Amazon Athena"]
-        direction LR
-        subgraph BRONZE["Bronze (raw, as received)"]
-            BFE["bronze.frontend_events<br/>Glue table · partition projection"]
-            BBE["bronze.backend_events<br/>Glue table · partition projection"]
-        end
-        subgraph SILVER["Silver (clean + modelled)"]
-            SFE["frontend_events<br/>Iceberg · typed · deduplicated"]
-            SBE["backend_events<br/>Iceberg · typed · deduplicated"]
-            SF["fct_sessions · fct_api_errors<br/>dim_users<br/>Iceberg"]
-        end
-        subgraph GOLD["Gold (aggregated marts)"]
-            G["agg_daily_kpis · agg_api_error_rates<br/>agg_funnel<br/>Iceberg"]
-        end
-    end
-
-    BI["BI team<br/>dashboards (out of scope)<br/>via Athena JDBC/ODBC"]
-
-    FE --> BFE
-    BE --> BBE
-    BFE -- dbt --> SFE
-    BBE -- dbt --> SBE
-    SFE -- dbt --> SF
-    SBE -- dbt --> SF
-    SF -- dbt --> G
-    G --> BI
-
-    AF["Managed Airflow (MWAA) + Astronomer Cosmos<br/>daily run 05:00 UTC · SLA: ready by 07:00"]
-    AF -. "freshness check → dbt build → alert" .-> SILVER
-    AF -.-> GOLD
-```
+![Case 1 architecture](architecture.svg)
 
 **Platform foundations (apply to every layer):**
 
