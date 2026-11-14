@@ -20,12 +20,13 @@ flowchart LR
             BFE["bronze.frontend_events<br/>Glue table · partition projection"]
             BBE["bronze.backend_events<br/>Glue table · partition projection"]
         end
-        subgraph SILVER["Silver (clean)"]
-            SFE["silver.frontend_events<br/>Iceberg · typed · deduplicated"]
-            SBE["silver.backend_events<br/>Iceberg · typed · deduplicated"]
+        subgraph SILVER["Silver (clean + modelled)"]
+            SFE["frontend_events<br/>Iceberg · typed · deduplicated"]
+            SBE["backend_events<br/>Iceberg · typed · deduplicated"]
+            SF["fct_sessions · fct_api_errors<br/>dim_users<br/>Iceberg"]
         end
-        subgraph GOLD["Gold (business-ready)"]
-            G["fct_sessions · fct_api_errors<br/>dim_users · daily_kpis<br/>Iceberg"]
+        subgraph GOLD["Gold (aggregated marts)"]
+            G["agg_daily_kpis · agg_api_error_rates<br/>agg_funnel<br/>Iceberg"]
         end
     end
 
@@ -35,8 +36,9 @@ flowchart LR
     BE --> BBE
     BFE -- dbt --> SFE
     BBE -- dbt --> SBE
-    SFE -- dbt --> G
-    SBE -- dbt --> G
+    SFE -- dbt --> SF
+    SBE -- dbt --> SF
+    SF -- dbt --> G
     G --> BI
 
     AF["Managed Airflow (MWAA) + Astronomer Cosmos<br/>daily run 05:00 UTC · SLA: ready by 07:00"]
@@ -71,13 +73,15 @@ flowchart LR
   - Defined **once in Terraform**, not recreated daily.
   - **Partition projection** means Athena computes partitions from the `dt=` path pattern, so no daily `ALTER TABLE ADD PARTITION` or crawler is needed. That removes a whole failure point.
   - Data is kept exactly as received, so any downstream table can be rebuilt.
-- **Silver: Iceberg tables built by dbt**
-  - Parses the JSON into typed columns, standardises timestamps to UTC, hashes PII.
+- **Silver: cleaned and modelled Iceberg tables built by dbt**
+  - **Cleaned events:** parses the JSON into typed columns, standardises timestamps to UTC, hashes PII.
   - **Deduplicates on `event_id`** with an incremental `MERGE`, using a **3-day lookback window** so late-arriving events are still captured.
+  - **Facts and dimensions:** `fct_sessions`, `fct_api_errors` and `dim_users` join frontend and backend events (for example sessions with their API errors).
+  - Analysts can query silver directly for custom analysis.
   - Iceberg gives ACID transactions, `MERGE` and time travel on top of S3.
-- **Gold: business-ready Iceberg tables built by dbt**
-  - Joins frontend and backend events (for example sessions with their API errors).
-  - Pre-aggregated daily KPIs, so dashboards stay fast and cheap.
+- **Gold: aggregated marts built by dbt**
+  - Aggregated tables only (daily KPIs, error rates, funnel), built from silver facts and dimensions.
+  - Ready for dashboards, so they stay fast and cheap.
   - Partitioned by `event_date`, so queries scan only the days they need.
 - **Orchestration: managed Airflow + Cosmos**
   - Cosmos turns every dbt model and test into an Airflow task, so failures are visible per model and retries are granular.
