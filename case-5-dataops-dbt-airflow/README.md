@@ -33,9 +33,10 @@ The order follows one principle: **first stop the bleeding, then automate the ch
 - **Production runs only from Airflow.** All 20 pipelines run on schedule in Airflow, and **production credentials are removed from laptops**. That's what makes the rule real, not just a convention.
 - **Protect `main` and work in branches.** No direct pushes; every change goes through a pull request with one review. For a team new to Git workflows, I run a short hands-on session: branch → pull request → review → merge.
 - **Separate dev and prod.** Each developer builds and tests dbt in a **personal dev schema** (`dbt build --target dev` writes to `dbt_<name>`), so nobody tests on production tables and nobody blocks a colleague.
-- **One deployment pipeline per environment:**
-  - **shared dev:** deployed automatically on merge to `main`
-  - **prod:** a **manual dispatch**, restricted to the `main` branch (GitHub environment rules), so a feature branch can't reach production by mistake
+- **One branch, `main`, and one deployment pipeline per environment:**
+  - **shared dev:** a **manual dispatch of the pull request branch**, for an end-to-end test **before merging**. Manual on purpose: dev is used only when a change needs it, and nobody overwrites a colleague's test
+  - **prod:** a **manual dispatch of `main`**, restricted by GitHub environment rules, so a feature branch can't reach production by mistake
+  - **No `dev` branch:** with 6 people it would collect unfinished work and drift from `main`. Testing the pull request branch on dev gives the same safety with a single branch
 - **pre-commit standards, as warnings first.** Naming, required tests and docs, SQL style. They warn without blocking at first, with the existing problems listed in a baseline file, so the team isn't buried under legacy issues on day one.
 - **Alerting and on-call from day one.** Airflow failures go to a Slack channel and tag the on-call person. The team hears about failures before BI does.
 
@@ -62,6 +63,7 @@ The order follows one principle: **first stop the bleeding, then automate the ch
 
 | Not now | Why |
 |---|---|
+| Automatic deployments (continuous deployment) | Two one-click deployments are easy to learn and keep dev under control; automate once the team trusts the pipeline |
 | A full permanent staging environment | Personal schemas, CI schemas and the shared dev cover the need without a third environment to maintain |
 | A paid data observability tool | dbt tests, freshness and Slack alerts come first; revisit if incidents still slip through |
 | Data contracts with source teams | Valuable, but depends on other teams; start with contracts on our own output tables |
@@ -71,27 +73,59 @@ The order follows one principle: **first stop the bleeding, then automate the ch
 
 ---
 
-## 3. How a dbt change can't silently break production
+## 3. How a change can't silently break production
 
-Several layers, each catching what the previous one misses:
+### What CI does on every push to a pull request
 
-1. **Local:** pre-commit checks standards on every commit; the developer builds and tests in their personal schema.
-2. **Build downstream, not just the change.** In CI, `state:modified+` rebuilds the changed model *and all its children*. If renaming a column breaks a mart three levels down, the pull request fails.
-3. **Compare against prod with `--defer`.** Unchanged parents are read from production, so CI is fast and tests run on real data, not an empty schema.
+GitHub starts a temporary machine, installs the tools, runs the checks, then throws the machine away. Each workflow runs only when its files change.
+
+**Airflow** ([ci-airflow.yml](templates/.github/workflows/ci-airflow.yml), [test_dag_integrity.py](templates/tests/test_dag_integrity.py))
+- Installs the **same Airflow version as prod** and loads every DAG, the way the scheduler would. No Airflow server needed.
+- Fails on **import errors** (syntax, missing imports, cycles, duplicate DAG ids) and on **team rules**: real owner, tags, retries, catchup off, **a failure alert set**.
+
+**dbt** ([ci-dbt.yml](templates/.github/workflows/ci-dbt.yml))
+1. **Lint** the SQL.
+2. **Download the prod `manifest.json` from S3.** dbt writes this file on every parse; it lists every model with a fingerprint of its code. The prod deploy saves it after each release.
+3. **Compare** the branch with it: `state:modified` finds new or changed models, `+` adds everything downstream.
+4. **Build and test** only those models in a temporary schema, `ci_pr_<number>`, in the prod warehouse. Unchanged parents are read from the prod tables (`--defer`), so the test runs on **real data without touching any prod table**:
 
    ```bash
-   dbt build --select state:modified+ --defer --state ./prod-artifacts --target ci
+   dbt build --select state:modified+ --defer --state prod-artifacts --target ci
    ```
 
-   The prod `manifest.json` is saved after every prod deployment, so CI always knows what's currently in production.
-4. **Tests that encode expectations:**
-   - **generic tests in YAML:** keys unique and not null, accepted values, relationships
-   - **singular tests** for business rules: "revenue is never negative", "row count not down more than 50% day over day"
-   - **unit tests** for tricky logic, in CI
-5. **Model contracts on the tables BI uses:** a change that breaks a column name or type fails the build instead of reaching a dashboard.
-6. **Review:** `CODEOWNERS` sends the pull request to someone who knows the area; the pull request template asks what changed, which tables are affected, how it was tested, and whether a backfill is needed.
-7. **Final end-to-end check on the shared dev**, mainly for DAG changes.
-8. **In production, `dbt build` stops at the first failing test** with `error` severity. Downstream models aren't updated, so BI sees yesterday's correct data plus a "data delayed" message, never wrong numbers.
+   Example: change `stg_trades` → CI builds and tests `stg_trades`, `fct_trades` and `mart_volume` in `ci_pr_123`, reading their unchanged parents from prod.
+5. **Drop** the CI schema.
+
+Unit tests run in step 4: they use fake input rows from YAML, so they check the logic before merge.
+
+**What this needs, once:**
+- a **`ci` target** ([profiles.yml](templates/dbt/profiles.yml)) and a **CI database user**: read on prod, write on `ci_*` schemas only
+- a **schema macro** ([generate_schema_name.sql](templates/dbt/macros/generate_schema_name.sql)) so custom schemas are used only in prod; in dev and CI everything goes to the target schema
+- the **prod deploy uploads the manifest** ([deploy.yml](templates/.github/workflows/deploy.yml))
+
+### All the safety layers
+
+1. **Local:** pre-commit standards on every commit; builds in a personal dev schema.
+2. **CI:** DAG integrity, SQL lint, unit tests, changed models and everything downstream built and tested on prod data.
+3. **Model contracts** on the tables BI uses: a broken column name or type fails the build.
+4. **Review:** `CODEOWNERS` routes the pull request to someone who knows the area.
+5. **Shared dev:** the pull request branch is deployed for a final end-to-end check before merging, mainly for DAG changes.
+6. **In production, `dbt build` stops at the first failing test.** Downstream models aren't updated: BI keeps yesterday's correct data and gets a "data delayed" message.
+
+### Templates
+
+Example files in [templates/](templates/), ready to adapt:
+
+| File | Purpose |
+|---|---|
+| [ci-dbt.yml](templates/.github/workflows/ci-dbt.yml) | dbt CI: lint, prod manifest, build and test changed models in `ci_pr_<number>` |
+| [ci-airflow.yml](templates/.github/workflows/ci-airflow.yml) | Airflow CI: DAG integrity tests |
+| [deploy.yml](templates/.github/workflows/deploy.yml) | Manual dispatch: any branch → dev, `main` only → prod; one deployment at a time; saves the manifest |
+| [test_dag_integrity.py](templates/tests/test_dag_integrity.py) | Import errors and team rules for every DAG |
+| [profiles.yml](templates/dbt/profiles.yml) | `dev`, `ci` and `prod` targets |
+| [generate_schema_name.sql](templates/dbt/macros/generate_schema_name.sql) / [drop_ci_schema.sql](templates/dbt/macros/drop_ci_schema.sql) | Keep CI out of prod schemas; clean up after CI |
+
+They sit in `templates/` rather than the repository's own `.github/`, so GitHub doesn't run them here.
 
 ---
 
@@ -145,7 +179,7 @@ The risk with a team new to CI/CD is a pipeline that feels like a gate nobody un
 |---|---|---|
 | **Warning** | A test with `warn` severity fails, a run is slow | A ticket so it isn't forgotten; reviewed weekly. A warning that keeps coming back gets a decision: fix the cause, make it blocking, or delete the test if it's noise |
 | **Failure** | Pipeline stopped, data delayed | The on-call person fixes it, alone or with the pipeline owner; BI kept informed |
-| **Major** | Wrong data reached dashboards | Incident with the team involved; short blameless review once fixed |
+| **Major** | Wrong data reached dashboards | An incident is created and the on-call developer acts immediately, involving the pipeline owner or the team if needed |
 
 - **Weekly on-call rotation:** with 6 people, each person is on call one week in six. That's sustainable, and everyone learns every pipeline.
 - **Retries** handle transient errors (timeouts, throttling) automatically, so people are only called for real problems.
@@ -158,8 +192,9 @@ The risk with a team new to CI/CD is a pipeline that feels like a gate nobody un
 | Choice | Benefit | Cost / risk | Mitigation |
 |---|---|---|---|
 | Pull requests and reviews on every change | Fewer incidents, shared knowledge | Changes take a bit longer to ship | Small pull requests, same-day reviews |
-| Manual dispatch to prod | Controlled releases; who deployed is visible | One more step than full automation | One click, `main` only; automate later once trust is built |
+| Manual deployments to dev and prod | Controlled releases; who deployed what is visible; dev never overwritten by surprise | One more step than full automation | One click each; prod restricted to `main`; automate later once trust is built |
 | CI against prod data with `--defer` | Realistic tests, fast CI | CI needs read access to prod data | Read-only CI role; sensitive data masked or hashed upstream |
+| One branch (`main`), no `dev` branch | One review per change, small releases, no drift between branches | No built-in batch of approved changes | Dev test of the branch before merging; a weekly release is still possible by dispatching `main` to prod on a fixed day |
 | No permanent staging | Less to maintain, cheaper | No full rehearsal for every change | Shared dev for end-to-end checks on DAG and infrastructure changes |
 | Standards and tests start as warnings | Adoption without frustration | Some issues pass at first | Warnings become tickets; made blocking in phase 3 |
 | Phased rollout | The team learns gradually | Some risk remains in the first weeks | Protected `main`, no prod credentials on laptops, and alerts come first: they remove the biggest risks |
