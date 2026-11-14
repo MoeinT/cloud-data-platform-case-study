@@ -13,13 +13,13 @@
 
 | Concern | Stack |
 |---|---|
-| Infrastructure as Code | **Terraform**: S3, Glue databases and bronze tables, Athena workgroups, IAM, Lake Formation, MWAA |
-| CI/CD | **GitLab CI**: lint, test and deploy for dbt, DAGs and Terraform |
+| Orchestration | **Apache Airflow + Cosmos**: runs the daily pipeline, creates the bronze tables, sends alerts |
 | Transformation | **dbt Core + dbt-athena** (SQL runs on Athena) |
-| Data quality | **dbt tests**: source freshness, generic, singular and unit tests |
-| Governance and security | **IAM** (least privilege), **Lake Formation** (table/column access), **KMS** (encryption), **CloudTrail** (audit) |
-| Observability | Airflow failure and SLA alerts to **Slack**, **CloudWatch** metrics, dbt run artifacts |
-| Cost control | **Athena workgroups** with per-query scan limits, Iceberg partitioning, S3 lifecycle rules |
+| Data quality | **dbt tests**: source freshness, YAML tests, singular tests on source data, unit tests |
+| Infrastructure as Code | **Terraform**: S3 buckets, IAM roles, Glue databases, Athena workgroups |
+| CI/CD | **GitHub Actions**: lint, test and deploy for dbt, DAGs and Terraform |
+| Security | **IAM** least-privilege roles; S3 encryption enabled by default |
+| Alerting | **Airflow → Slack** on any failure or missed SLA |
 
 ---
 
@@ -27,15 +27,32 @@
 
 **Overall: a serverless lakehouse on AWS**
 - **Fewest moving parts.** Data already lives in S3, so Athena queries it where it is. There's no separate loading service to build or operate.
-- **No servers to manage.** Athena, Glue, S3 and MWAA are all managed. The 2 engineers spend the week on data, not infrastructure.
+- **Serverless data layer.** Athena, Glue and S3 are fully managed. Only Airflow runs as a small container, and it only orchestrates; the heavy work runs on Athena. The 2 engineers spend the week on data, not infrastructure.
 - **Pay per query.** No idle compute cost, which suits a startup whose volume isn't known yet.
 - **Open format.** Iceberg tables in our own S3 bucket can be read by other engines (Snowflake, Spark) later, with no lock-in and no migration.
 
 **Per layer**
 - **Bronze: Glue tables over the raw JSON**
-  - Defined **once in Terraform**, not recreated daily.
-  - **Partition projection** means Athena computes partitions from the `dt=` path pattern, so no daily `ALTER TABLE ADD PARTITION` or crawler is needed. That removes a whole failure point.
+  - Created by the **first Airflow task** with `CREATE EXTERNAL TABLE IF NOT EXISTS`. It's safe to run every day, and the DDL lives in the repo next to the dbt code, owned by the data team.
+  - **Partition projection** is configured in that same `CREATE` statement, as table properties. Athena then works out the partitions from the `dt=` path itself, so there's **no `ALTER TABLE ADD PARTITION`, no crawler and no daily partition step**.
   - Data is kept exactly as received, so any downstream table can be rebuilt.
+  - If the schema changes, we drop and recreate the external table. That's safe because it only touches metadata, never the files in S3.
+
+  ```sql
+  CREATE EXTERNAL TABLE IF NOT EXISTS bronze.frontend_events (
+      event_id string, event_type string, user_id string, ts string, payload string
+  )
+  PARTITIONED BY (dt string)
+  ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
+  LOCATION 's3://raw-events/frontend/'
+  TBLPROPERTIES (
+      'projection.enabled'          = 'true',
+      'projection.dt.type'          = 'date',
+      'projection.dt.format'        = 'yyyy-MM-dd',
+      'projection.dt.range'         = '2025-01-01,NOW',
+      'storage.location.template'   = 's3://raw-events/frontend/dt=${dt}/'
+  );
+  ```
 - **Silver: cleaned and modelled Iceberg tables built by dbt**
   - **Cleaned events:** parses the JSON into typed columns, standardises timestamps to UTC, hashes PII.
   - **Deduplicates on `event_id`** with an incremental `MERGE`, using a **3-day lookback window** so late-arriving events are still captured.
@@ -46,9 +63,12 @@
   - Aggregated tables only (daily KPIs, error rates, funnel), built from silver facts and dimensions.
   - Ready for dashboards, so they stay fast and cheap.
   - Partitioned by `event_date`, so queries scan only the days they need.
-- **Orchestration: managed Airflow + Cosmos**
+- **Orchestration: Apache Airflow (open source) + Cosmos**
   - Cosmos turns every dbt model and test into an Airflow task, so failures are visible per model and retries are granular.
   - Daily schedule fits the requirement: data must be ready in the morning, not in real time.
+  - Open source: no licence cost, and the industry-standard orchestrator.
+- **Consumption: BI tools on top of Athena**
+  - Metabase and Apache Superset both connect natively to Athena, so the BI team works directly on the gold tables. Dashboards themselves are out of scope.
 
 ---
 
@@ -56,7 +76,8 @@
 
 ```mermaid
 flowchart LR
-    A["1. Check source freshness<br/>yesterday's files arrived?"] --> B["2. dbt build silver<br/>models + tests"]
+    A0["0. Create bronze tables<br/>IF NOT EXISTS"] --> A["1. Check source freshness<br/>yesterday's files arrived?"]
+    A --> B["2. dbt build silver<br/>models + tests"]
     B --> C["3. dbt build gold<br/>models + tests"]
     C --> D["4. Notify<br/>Slack: data ready"]
     B -. "test fails" .-> X["Stop · alert on Slack<br/>gold not updated"]
@@ -73,33 +94,57 @@ flowchart LR
 
 | Check | Where | Example |
 |---|---|---|
-| **Source freshness** | Bronze | Fails if no new files arrived for yesterday |
-| **Generic tests** | Silver, gold | `event_id` unique and not null; `event_type` in the accepted values |
-| **Singular tests** | Silver, gold | Daily event count not down more than 50% from the previous day (catches a broken tracker) |
+| **Source freshness** | Bronze (dbt sources) | Fails if no new files arrived for yesterday |
+| **Generic tests in YAML** | Silver, gold | Declared in each model's `.yml`: `event_id` unique and not null, `event_type` in accepted values, `user_id` exists in `dim_users` |
+| **Singular tests on source data** | Bronze (the raw S3 data, through the Glue tables) | No events with a future timestamp; daily event count not down more than 50% from the previous day (catches a broken tracker) |
 | **Unit tests** | Silver, gold | Session logic gives the expected output on a fixed input |
-| **Alerting** | Airflow | Slack on any failure, plus a **missed-SLA alert at 07:00** |
+| **Alerting** | Airflow → Slack | Message on any failure, plus a **missed-SLA alert at 07:00** |
+
+**dbt best practices**
+- **Clear structure and naming:** one folder per layer. Silver holds `fct_` and `dim_` models; gold holds `agg_` marts.
+- **Tests and docs live in YAML, next to each model:** descriptions for every model and key column, plus the generic tests. `dbt docs generate` gives BI a browsable catalog with lineage.
+- **`dbt build`, not `run` then `test`:** each model is tested right after it's built, and a failure stops everything downstream.
+- **Parameterised incremental loads for selective backfills:** a macro reads optional `start_date` / `end_date` variables. By default it processes the last 3 days (the lookback window). To reprocess a specific period, pass dates and only that range is rebuilt, with no full refresh:
+
+  ```sql
+  -- macros/incremental_window.sql
+  {% macro incremental_window(column) %}
+    {% if var('start_date', none) %}
+      {{ column }} between date '{{ var("start_date") }}' and date '{{ var("end_date") }}'
+    {% else %}
+      {{ column }} >= current_date - interval '3' day
+    {% endif %}
+  {% endmacro %}
+
+  -- in fct_sessions.sql
+  {% if is_incremental() %} where {{ incremental_window('event_date') }} {% endif %}
+  ```
+
+  ```bash
+  dbt build --select fct_sessions+ --vars '{start_date: "2026-01-01", end_date: "2026-01-31"}'
+  ```
 
 ---
 
 ## 5. Security and governance
 
-- **Least-privilege IAM:** separate roles for Airflow/dbt (read raw, write silver and gold) and BI (read gold only).
-- **Lake Formation:** table- and column-level access. BI sees gold; analysts can see silver; PII columns are restricted.
+- **Least-privilege IAM roles:** Airflow/dbt can read raw and write silver and gold; BI can read gold (and silver for analysts).
 - **PII:** user identifiers and IPs are hashed in silver.
-- **Encryption:** KMS on all buckets and Athena query results.
-- **Audit:** CloudTrail logs who queried what.
+- **Encryption:** S3 default encryption on all buckets and Athena query results.
 - **Separate Athena workgroups** for transformation and BI: isolated costs and per-query scan limits.
+- **Later, if needed:** Lake Formation for column-level permissions.
 
 ---
 
 ## 6. Environments, IaC and CI/CD
 
 - **Two environments, dev and prod**: separate Glue databases and S3 prefixes, selected by dbt target.
-- **Everything in Terraform**, so the setup is repeatable and reviewable.
-- **GitLab CI on every merge request:**
+- **Infrastructure in Terraform** (buckets, IAM roles, Glue databases, Athena workgroups), so the setup is repeatable and reviewable.
+- **Tables belong to the data code, not Terraform:** bronze DDL runs from Airflow, and silver and gold are built by dbt. A schema change is a normal data pull request, not an infrastructure deployment.
+- **GitHub Actions on every pull request:**
   - SQL lint (SQLFluff) and `dbt compile`
   - `dbt build --select state:modified+` in a temporary CI schema, which builds and tests only what changed
-  - `terraform plan`, posted to the merge request
+  - `terraform plan`, posted to the pull request
 - **On merge to `main`:** deploy dbt and DAGs to Airflow, then `terraform apply`.
 
 ---
@@ -111,7 +156,7 @@ flowchart LR
 | Athena, not a loaded warehouse | No loading step, serverless, pay per query | Cost grows with data scanned; dashboard queries are slower than in a dedicated warehouse | Partitioned Iceberg tables, pre-aggregated gold, workgroup scan limits |
 | Daily batch, not streaming | Simple, cheap, meets "ready in the morning" | Data is up to 1 day old | Increase the schedule to hourly if needed, with no redesign |
 | Iceberg for silver and gold | ACID, MERGE, time travel, open format | Needs periodic maintenance | Weekly OPTIMIZE and VACUUM DAG |
-| Managed Airflow (MWAA) | Standard orchestrator, grows with the platform | Fixed monthly cost, more than a simple scheduler | Pays off as soon as there are several pipelines |
+| Apache Airflow (open source) | Standard orchestrator, no licence cost, grows with the platform | We run and upgrade it ourselves | Small containerised setup (single service); move to a managed offering if operations become a burden |
 | Land raw JSON as-is | Never breaks on schema changes | Parsing work moves to silver | Schema handled in dbt, with tests on key fields |
 
 ---
@@ -129,10 +174,10 @@ flowchart LR
 
 | Day | Engineer A | Engineer B |
 |---|---|---|
-| **1** | Kick-off with the CEO and BI: agree the **3–5 priority KPIs** and the event schema | Terraform foundations: S3, Glue, Athena workgroups, IAM |
-| **2** | Bronze tables + partition projection; profile the raw data | MWAA + Cosmos set up; GitLab CI skeleton |
+| **1** | Kick-off with the CEO and BI: agree the **3–5 priority KPIs** and the event schema | Terraform foundations: S3, IAM, Glue databases, Athena workgroups |
+| **2** | Bronze DDL (IF NOT EXISTS + partition projection); profile the raw data | Airflow + Cosmos set up; GitHub Actions skeleton |
 | **3–4** | dbt silver models + tests | dbt gold models for the priority KPIs + tests |
-| **5** | End-to-end run in dev; fix data issues | Alerting, SLA, Lake Formation access for BI |
+| **5** | End-to-end run in dev; fix data issues | Slack alerting, SLA, IAM access for BI |
 | **6** | Deploy to prod; backfill history | BI team validates the gold tables |
 | **7** | Buffer, documentation, handover | Buffer, documentation, handover |
 
