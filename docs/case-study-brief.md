@@ -183,6 +183,6 @@ Answer the questions in the domains that match your experience. No need to cover
 - [ ] Case 2: S3 authentication & authorisation
 - [ ] Case 3: Serverless webhook → S3
 - [ ] Case 4: Snowflake performance & cost
-- [ ] Case 5: DataOps for dbt + Airflow
+- [x] Case 5: DataOps for dbt + Airflow
 - [ ] Case 6: Heavy ML workload
 - [ ] Case 7: GenAI assistant
