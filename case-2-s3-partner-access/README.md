@@ -33,61 +33,85 @@ We create **one IAM role per partner in our account**. The partner's own role is
 | 1 | Us | Create the role `partner-a-upload` with a **trust policy** naming the partner's role and requiring an **external ID** |
 | 2 | Us | Attach a **permissions policy**: write-only on the partner's folder |
 | 3 | Partner | Allow their role to call `sts:AssumeRole` on our role ARN |
-| 4 | Partner | Assume our role (passing the external ID), get temporary credentials, upload |
+| 4 | Partner | From their own role, assume ours (passing the external ID), get temporary credentials, upload |
 
-**1. Trust policy (on our role): who can assume it**
+**1. Trust policy and role (our account): who can assume it**
 
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [{
-    "Effect": "Allow",
-    "Principal": { "AWS": "arn:aws:iam::<PARTNER_ACCOUNT>:role/<partner-uploader>" },
-    "Action": "sts:AssumeRole",
-    "Condition": { "StringEquals": { "sts:ExternalId": "<external-id>" } }
-  }]
+```hcl
+data "aws_iam_policy_document" "partner_a_assume_role" {
+  statement {
+    sid     = "PartnerAAssumeRole"
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "AWS"
+      identifiers = [var.partner_a_role_arn] # their specific role, not their whole account
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "sts:ExternalId"
+      values   = [var.partner_a_external_id]
+    }
+  }
+}
+
+resource "aws_iam_role" "partner_a_upload" {
+  name                 = "partner-a-upload-${var.env}"
+  assume_role_policy   = data.aws_iam_policy_document.partner_a_assume_role.json
+  max_session_duration = 3600
 }
 ```
 
-- We trust the partner's **specific role**, not their whole account (`:root`), which would let any identity their admins choose assume our role.
+- We trust the partner's **specific role**, not their account root (`:root`), which would let any identity their admins choose assume our role.
 
-**2. Permissions policy (on our role): what it can do**
+**2. Permissions (our role): what it can do**
 
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [{
-    "Sid": "WriteOwnFolderOnly",
-    "Effect": "Allow",
-    "Action": "s3:PutObject",
-    "Resource": "arn:aws:s3:::partner-inbound/partner-a/*"
-  }]
-}
+```hcl
+  statement {
+    sid       = "WriteOwnFolderOnly"
+    effect    = "Allow"
+    actions   = ["s3:PutObject"]
+    resources = ["${aws_s3_bucket.partner_inbound.arn}/partner-a/*"]
+  }
 ```
 
-**3. Partner side: allowed to assume our role**
+**3. Partner side: their role may assume ours**
 
-```json
-{
-  "Effect": "Allow",
-  "Action": "sts:AssumeRole",
-  "Resource": "arn:aws:iam::<OUR_ACCOUNT>:role/partner-a-upload"
-}
+```hcl
+  statement {
+    sid       = "AssumeGroupUploadRole"
+    effect    = "Allow"
+    actions   = ["sts:AssumeRole"]
+    resources = ["arn:aws:iam::<OUR_ACCOUNT>:role/partner-a-upload-prod"]
+  }
 ```
 
-**4. Partner side: uploading.** The AWS CLI and SDKs assume the role automatically from a profile:
+**4. Partner side: uploading.** Their code runs **as their own role** (for example the role attached to their EC2 instance, container or Lambda). From there it makes **two hops**: their role → our role → S3.
 
-```ini
-# ~/.aws/config on the partner side
-[profile group-upload]
-role_arn       = arn:aws:iam::<OUR_ACCOUNT>:role/partner-a-upload
-external_id    = <external-id>
-source_profile = default
+```python
+import boto3
+
+# Hop 1: runs with the partner's own role credentials (picked up automatically on EC2, ECS or Lambda)
+sts = boto3.client("sts")
+creds = sts.assume_role(
+    RoleArn="arn:aws:iam::<OUR_ACCOUNT>:role/partner-a-upload-prod",
+    RoleSessionName="partner-a",
+    ExternalId="<external-id>",
+)["Credentials"]
+
+# Hop 2: temporary credentials of OUR role, valid 1 hour
+s3 = boto3.client(
+    "s3",
+    aws_access_key_id=creds["AccessKeyId"],
+    aws_secret_access_key=creds["SecretAccessKey"],
+    aws_session_token=creds["SessionToken"],
+)
+s3.upload_file("orders.csv", "partner-inbound", "partner-a/2026-11-15/orders.csv")
 ```
 
-```bash
-aws s3 cp orders.csv s3://partner-inbound/partner-a/2026-11-15/ --profile group-upload
-```
+The AWS CLI can do the same with a profile (`role_arn` + `external_id`, starting from the role attached to their machine with `credential_source = Ec2InstanceMetadata`).
 
 ### Why the external ID
 
@@ -189,10 +213,19 @@ Defence in depth: each layer still protects if another one is misconfigured.
 
 - **One role, SFTP user or IAM user per partner.** Never shared, so each partner can be audited and revoked on its own.
 - **Write-only:** `s3:PutObject` only. No `GetObject` (can't read files, even its own), no `DeleteObject`, no `ListBucket`. If a partner needs to check its uploads, `ListBucket` is allowed **on its own prefix only**:
-  ```json
-  { "Effect": "Allow", "Action": "s3:ListBucket",
-    "Resource": "arn:aws:s3:::partner-inbound",
-    "Condition": { "StringLike": { "s3:prefix": "partner-a/*" } } }
+  ```hcl
+  statement {
+    sid       = "ListOwnFolderOnly"
+    effect    = "Allow"
+    actions   = ["s3:ListBucket"]
+    resources = [aws_s3_bucket.partner_inbound.arn]
+
+    condition {
+      test     = "StringLike"
+      variable = "s3:prefix"
+      values   = ["partner-a/*"]
+    }
+  }
   ```
 - **Its own folder only:** every resource ARN ends with `partner-x/*`.
 - **Short sessions** (1 hour) for assumed roles; **external ID** for third parties.
@@ -202,10 +235,24 @@ Defence in depth: each layer still protects if another one is misconfigured.
 - **A dedicated inbound bucket**, separate from the data lake. A mistake in a partner policy can never expose analytical data.
 - **Block Public Access** on, and **ACLs disabled** ("bucket owner enforced"): we own every file whoever uploads it, and nobody can share files through ACLs.
 - **Deny anything not over HTTPS** in the bucket policy:
-  ```json
-  { "Sid": "DenyInsecureTransport", "Effect": "Deny", "Principal": "*", "Action": "s3:*",
-    "Resource": ["arn:aws:s3:::partner-inbound", "arn:aws:s3:::partner-inbound/*"],
-    "Condition": { "Bool": { "aws:SecureTransport": "false" } } }
+  ```hcl
+  statement {
+    sid       = "DenyInsecureTransport"
+    effect    = "Deny"
+    actions   = ["s3:*"]
+    resources = [aws_s3_bucket.partner_inbound.arn, "${aws_s3_bucket.partner_inbound.arn}/*"]
+
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+
+    condition {
+      test     = "Bool"
+      variable = "aws:SecureTransport"
+      values   = ["false"]
+    }
+  }
   ```
 - **Encryption by default.** If a customer-managed KMS key is required, partner roles get **`kms:GenerateDataKey` on that key only**: they can encrypt what they upload. Large multipart uploads also need `kms:Decrypt`, but without `s3:GetObject` the partner still can't read anything.
 - **Versioning**, so an overwritten file can be recovered, and a **lifecycle rule** that deletes raw files after a set period (e.g. 30 days).
