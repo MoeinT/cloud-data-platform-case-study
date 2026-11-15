@@ -80,11 +80,13 @@ flowchart LR
     A --> B["2. dbt build silver<br/>models + tests"]
     B --> C["3. dbt build gold<br/>models + tests"]
     C --> D["4. Notify<br/>Slack: data ready"]
-    B -. "test fails" .-> X["Stop · alert on Slack<br/>gold not updated"]
+    A -. "files still missing<br/>after retries" .-> X["Stop · alert on Slack<br/>BI keeps yesterday's data"]
+    B -. "test fails" .-> X
     C -.-> X
 ```
 
 - **05:00 UTC run, ready by 07:00.** That leaves 2 hours of buffer for a retry or a manual fix before BI starts.
+- **Late files:** the freshness check retries (e.g. every 15 minutes until 06:30). If yesterday's files still haven't arrived, the run stops and Slack alerts "source late". Nothing is rebuilt, so BI keeps yesterday's complete data instead of a partial day; once the files land, we rerun the DAG.
 - `dbt build` runs each model's tests right after it. **A failing test stops everything downstream**, so BI never sees bad data. They see yesterday's correct data and an alert instead.
 - **Weekly maintenance DAG:** Iceberg `OPTIMIZE` (compacts small files) and `VACUUM` (expires old snapshots), which keep queries fast and storage costs low.
 
@@ -104,24 +106,16 @@ flowchart LR
 - **Clear structure and naming:** one folder per layer. Silver holds `fct_` and `dim_` models; gold holds `agg_` marts.
 - **Tests and docs live in YAML, next to each model:** descriptions for every model and key column, plus the generic tests. `dbt docs generate` gives BI a browsable catalog with lineage.
 - **`dbt build`, not `run` then `test`:** each model is tested right after it's built, and a failure stops everything downstream.
-- **Parameterised incremental loads for selective backfills:** a macro reads optional `start_date` / `end_date` variables. By default it processes the last 3 days (the lookback window). To reprocess a specific period, pass dates and only that range is rebuilt, with no full refresh:
-
-  ```sql
-  -- macros/incremental_window.sql
-  {% macro incremental_window(column) %}
-    {% if var('start_date', none) %}
-      {{ column }} between date '{{ var("start_date") }}' and date '{{ var("end_date") }}'
-    {% else %}
-      {{ column }} >= current_date - interval '3' day
-    {% endif %}
-  {% endmacro %}
-
-  -- in fct_sessions.sql
-  {% if is_incremental() %} where {{ incremental_window('event_date') }} {% endif %}
-  ```
+- **Parameterised incremental loads for selective backfills:** incremental models read optional `start_date` / `end_date` variables. By default they process the last 3 days (the lookback window). To reprocess a specific period, pass dates and only that range is rebuilt, with no full refresh:
 
   ```bash
   dbt build --select fct_sessions+ --vars '{start_date: "2026-01-01", end_date: "2026-01-31"}'
+  ```
+
+- **One source at a time:** when a fact unions several sources, each source's logic sits in its own macro, named after the source. An optional `source` variable rebuilds just that one (empty = all), and it combines with the dates:
+
+  ```bash
+  dbt build --select fct_sessions+ --vars '{source: app_sessions, start_date: "2026-01-01", end_date: "2026-01-31"}'
   ```
 
 ---
