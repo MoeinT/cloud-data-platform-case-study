@@ -23,7 +23,6 @@ jobs:
     env:
       DBT_PROFILES_DIR: .
       PR_NUMBER: ${{ github.event.number }}               # → schema ci_pr_<number>
-      DBT_CI_PASSWORD: ${{ secrets.DBT_CI_PASSWORD }}     # CI user: read prod, write ci_* only
     steps:
       - uses: actions/checkout@v4
 
@@ -32,14 +31,14 @@ jobs:
           python-version: "3.12"
 
       - name: Install dbt and linters
-        run: pip install dbt-core dbt-redshift sqlfluff   # use your warehouse's adapter
+        run: pip install dbt-core dbt-athena sqlfluff
 
       - name: Lint SQL
-        run: sqlfluff lint models/
+        run: sqlfluff lint models/ --dialect athena
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ vars.CI_ROLE_ARN }}
+          role-to-assume: ${{ vars.CI_ROLE_ARN }}   # read prod, write ci_* schemas only
           aws-region: eu-west-1
 
       - name: Download the prod manifest (saved by the prod deploy)

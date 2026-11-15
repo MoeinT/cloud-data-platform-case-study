@@ -1,31 +1,33 @@
 # Three targets. CI writes only to its own schema; dbt never writes outside the target schema.
+# Athena (dbt-athena): no passwords. Each target uses the IAM credentials of whoever runs it:
+# a developer's AWS login, the CI role (OIDC) or the Airflow role in prod.
 my_project:
   target: dev
   outputs:
     dev:
-      type: redshift
-      host: "{{ env_var('DBT_HOST') }}"
-      dbname: analytics
-      schema: "dbt_{{ env_var('USER') }}"              # personal dev schema
-      user: "{{ env_var('USER') }}"
-      password: "{{ env_var('DBT_PASSWORD') }}"
-      port: 5439
+      type: athena
+      region_name: eu-west-1
+      database: awsdatacatalog                          # Glue Data Catalog
+      schema: "dbt_{{ env_var('USER') }}"              # personal dev schema (a Glue database)
+      s3_staging_dir: s3://analytics-athena-results/dev/
+      s3_data_dir: s3://analytics-lake/dev/
+      work_group: dev
       threads: 4
     ci:
-      type: redshift
-      host: "{{ env_var('DBT_HOST') }}"                # the prod warehouse, to read prod data
-      dbname: analytics
+      type: athena
+      region_name: eu-west-1
+      database: awsdatacatalog                          # the prod catalog, to read prod tables (--defer)
       schema: "ci_pr_{{ env_var('PR_NUMBER') }}"       # temporary, dropped after the run
-      user: dbt_ci                                    # read prod, write ci_* only
-      password: "{{ env_var('DBT_CI_PASSWORD') }}"
-      port: 5439
+      s3_staging_dir: s3://analytics-athena-results/ci/
+      s3_data_dir: s3://analytics-lake/ci/             # CI role: read prod, write ci_* and this prefix only
+      work_group: ci
       threads: 8
     prod:
-      type: redshift
-      host: "{{ env_var('DBT_HOST') }}"
-      dbname: analytics
+      type: athena
+      region_name: eu-west-1
+      database: awsdatacatalog
       schema: analytics
-      user: dbt_prod
-      password: "{{ env_var('DBT_PROD_PASSWORD') }}"
-      port: 5439
+      s3_staging_dir: s3://analytics-athena-results/prod/
+      s3_data_dir: s3://analytics-lake/prod/
+      work_group: prod
       threads: 8

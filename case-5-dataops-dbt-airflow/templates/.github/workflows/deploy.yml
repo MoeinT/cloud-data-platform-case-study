@@ -40,9 +40,8 @@ jobs:
         working-directory: dbt
         env:
           DBT_PROFILES_DIR: .
-          DBT_PROD_PASSWORD: ${{ secrets.DBT_PROD_PASSWORD }}
         run: |
-          pip install dbt-core dbt-redshift
+          pip install dbt-core dbt-athena
           dbt deps
           dbt parse --target prod
           aws s3 cp target/manifest.json s3://${{ vars.DBT_ARTIFACTS_BUCKET }}/prod/manifest.json
