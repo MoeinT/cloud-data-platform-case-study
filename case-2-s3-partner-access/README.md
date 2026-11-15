@@ -18,6 +18,8 @@
 
 All partners write to a **dedicated inbound bucket**, one folder (prefix) per partner. Our pipeline picks up new files, validates them and loads them into the data lake. **Partners never access the data lake.**
 
+Illustrative Terraform for the bucket, the cross-account role, SFTP and the pre-signed URL Lambda: [`.cloud/terraform/case-study-2/`](../.cloud/terraform/case-study-2/).
+
 ---
 
 ## 2. AWS partner in another account
