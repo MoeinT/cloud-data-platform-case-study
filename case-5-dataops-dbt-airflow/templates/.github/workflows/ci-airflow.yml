@@ -1,0 +1,31 @@
+# CI for Airflow: load every DAG the way the scheduler would, without running Airflow.
+# Runs on every push to a branch with an open pull request, when DAG code changes.
+name: CI · Airflow DAGs
+
+on:
+  pull_request:
+    paths: ["dags/**", "plugins/**", "tests/**", "requirements.txt"]
+
+permissions:
+  contents: read
+
+jobs:
+  dag-integrity:
+    runs-on: ubuntu-latest
+    env:
+      AIRFLOW_HOME: ${{ github.workspace }}/.airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the same Airflow version as production
+        run: |
+          pip install "apache-airflow==2.10.5" pytest -r requirements.txt \
+            --constraint https://raw.githubusercontent.com/apache/airflow/constraints-2.10.5/constraints-3.12.txt
+
+      - name: DAG integrity tests
+        run: pytest tests/test_dag_integrity.py -v

@@ -1,0 +1,31 @@
+# Three targets. CI writes only to its own schema; dbt never writes outside the target schema.
+my_project:
+  target: dev
+  outputs:
+    dev:
+      type: redshift
+      host: "{{ env_var('DBT_HOST') }}"
+      dbname: analytics
+      schema: "dbt_{{ env_var('USER') }}"              # personal dev schema
+      user: "{{ env_var('USER') }}"
+      password: "{{ env_var('DBT_PASSWORD') }}"
+      port: 5439
+      threads: 4
+    ci:
+      type: redshift
+      host: "{{ env_var('DBT_HOST') }}"                # the prod warehouse, to read prod data
+      dbname: analytics
+      schema: "ci_pr_{{ env_var('PR_NUMBER') }}"       # temporary, dropped after the run
+      user: dbt_ci                                    # read prod, write ci_* only
+      password: "{{ env_var('DBT_CI_PASSWORD') }}"
+      port: 5439
+      threads: 8
+    prod:
+      type: redshift
+      host: "{{ env_var('DBT_HOST') }}"
+      dbname: analytics
+      schema: analytics
+      user: dbt_prod
+      password: "{{ env_var('DBT_PROD_PASSWORD') }}"
+      port: 5439
+      threads: 8

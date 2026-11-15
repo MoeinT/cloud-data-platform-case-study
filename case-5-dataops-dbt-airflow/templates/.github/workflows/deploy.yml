@@ -1,0 +1,48 @@
+# Deploy, by manual dispatch only:
+#   dev  → any branch (usually the pull request branch), for an end-to-end test before merging
+#   prod → main only (enforced by the "prod" GitHub environment's deployment branch rule)
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        options: [dev, prod]
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: deploy-${{ inputs.environment }}
+  cancel-in-progress: false   # one deployment at a time per environment; the next one waits
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # The "prod" GitHub environment only allows the main branch (deployment branch rule).
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.DEPLOY_ROLE_ARN }}   # one role per environment
+          aws-region: eu-west-1
+
+      - name: Ship DAGs and dbt project to Airflow
+        # The platform then copies S3 to the Airflow instances (e.g. DataSync → EFS).
+        run: aws s3 sync . s3://${{ vars.AIRFLOW_BUCKET }}/project/ --delete --exclude ".git*"
+
+      - name: Save the dbt manifest for CI (prod only)
+        if: ${{ inputs.environment == 'prod' }}
+        working-directory: dbt
+        env:
+          DBT_PROFILES_DIR: .
+          DBT_PROD_PASSWORD: ${{ secrets.DBT_PROD_PASSWORD }}
+        run: |
+          pip install dbt-core dbt-redshift
+          dbt deps
+          dbt parse --target prod
+          aws s3 cp target/manifest.json s3://${{ vars.DBT_ARTIFACTS_BUCKET }}/prod/manifest.json

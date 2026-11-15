@@ -1,0 +1,55 @@
+# CI for dbt: build and test only what changed, on real prod data, in a temporary schema.
+# Runs on every push to a branch with an open pull request, when dbt files change.
+name: CI · dbt
+
+on:
+  pull_request:
+    paths: ["dbt/**"]
+
+permissions:
+  id-token: write   # AWS access through OIDC, no long-lived keys
+  contents: read
+
+concurrency:
+  group: ci-dbt-${{ github.event.number }}
+  cancel-in-progress: true   # a new push cancels the previous run of the same PR
+
+jobs:
+  dbt:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dbt
+    env:
+      DBT_PROFILES_DIR: .
+      PR_NUMBER: ${{ github.event.number }}               # → schema ci_pr_<number>
+      DBT_CI_PASSWORD: ${{ secrets.DBT_CI_PASSWORD }}     # CI user: read prod, write ci_* only
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dbt and linters
+        run: pip install dbt-core dbt-redshift sqlfluff   # use your warehouse's adapter
+
+      - name: Lint SQL
+        run: sqlfluff lint models/
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.CI_ROLE_ARN }}
+          aws-region: eu-west-1
+
+      - name: Download the prod manifest (saved by the prod deploy)
+        run: aws s3 cp s3://${{ vars.DBT_ARTIFACTS_BUCKET }}/prod/manifest.json prod-artifacts/manifest.json
+
+      - name: Build and test changed models and everything downstream
+        run: |
+          dbt deps
+          dbt build --select state:modified+ --defer --state prod-artifacts --target ci
+
+      - name: Drop the CI schema
+        if: always()
+        run: dbt run-operation drop_ci_schema --target ci
