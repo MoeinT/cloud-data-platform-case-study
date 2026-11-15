@@ -58,9 +58,8 @@ data "aws_iam_policy_document" "partner_a_assume_role" {
 }
 
 resource "aws_iam_role" "partner_a_upload" {
-  name                 = "partner-a-upload-${var.env}"
-  assume_role_policy   = data.aws_iam_policy_document.partner_a_assume_role.json
-  max_session_duration = 3600
+  name               = "partner-a-upload-${var.env}"
+  assume_role_policy = data.aws_iam_policy_document.partner_a_assume_role.json
 }
 ```
 
@@ -128,9 +127,8 @@ A bucket policy naming the partner's role also works without credentials. Both s
 | | Role in our account (chosen) | Bucket policy |
 |---|---|---|
 | Where permissions live | Only in our account; the partner only holds "may assume role X" | Our bucket policy, repeated in the partner's IAM policy |
-| Isolation | One role per partner, revoked on its own | One shared policy for all partners (20 KB limit) |
+| Isolation | One role and role policy per partner (own folder); change or remove one without touching the others | All partners in one shared policy: an edit can affect everyone (20 KB limit) |
 | Confused deputy protection | External ID supported | No equivalent |
-| File ownership | Files are written by our role, so we own them | Written by the partner's identity; we need "bucket owner enforced" to own them |
 | Audit | Each session appears as our role in our CloudTrail | Requests appear as the partner's identity |
 | Partner effort | One extra step: assume the role | Slightly simpler |
 
@@ -144,16 +142,16 @@ The partner has no AWS identity, so it can't assume a role directly. Four option
 
 - **What it is:** SFTP is the long-standing standard for companies exchanging files. AWS Transfer Family runs a **managed SFTP server that writes directly to S3**.
 - **How it works:**
-  - Each partner gets an **SFTP user** with its **SSH public key**.
-  - The user is mapped to an **IAM role** and a **home folder** (`partner-inbound/partner-b/`). It's locked there and can't see anything else.
-  - The partner uploads with any SFTP client or script.
+  - **One server shared by all partners**; each partner gets an **SFTP user** with its **SSH public key** (the partner keeps the private key).
+  - The user's **home folder** (`partner-inbound/partner-b/`) is all they see, and its **IAM role** only allows writing there: two layers.
+  - The partner uploads with any SFTP client or script, e.g. `sftp -i partner_b_key partner-b@<server>` then `put orders.csv`.
   - Optional: restrict access to the partner's IP addresses (VPC-hosted endpoint with a security group).
 
 | ✅ Pros | ❌ Cons |
 |---|---|
 | Partners already know SFTP; no AWS knowledge needed | About $0.30 per hour per protocol (~$220/month) even when idle, plus data transfer |
 | Fully managed, writes straight to S3 | SSH keys to manage (receive, rotate, remove) |
-| Each partner locked to its own folder | Less suited to application-to-application integrations |
+| Each partner locked to its own folder; best for scheduled batch file drops | Less suited to application-to-application integrations (apps prefer HTTPS) |
 
 ### Option B: pre-signed URLs (for application integrations)
 
@@ -173,6 +171,7 @@ The partner has no AWS identity, so it can't assume a role directly. Four option
      curl -X PUT --upload-file orders.csv "<url>"
      ```
 - To also **cap the file size**, use a **pre-signed POST**, which can enforce a size range and a key prefix.
+- **Flow:** `partner app → API Gateway (authenticates, rate-limits) → Lambda (picks the folder, signs the link) → partner PUTs the file straight to S3 → our pipeline`. The API only hands out links; the upload goes directly to S3, signed with the Lambda role's permissions (so that role needs `PutObject`). The folder comes from who the partner authenticated as, never from their input.
 
 | ✅ Pros | ❌ Cons |
 |---|---|
