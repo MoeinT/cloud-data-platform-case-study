@@ -18,6 +18,7 @@ One rule sums it up: **nobody deploys from a laptop. A merged pull request is th
 | Local checks | **pre-commit**: dbt standards, SQL lint (SQLFluff), YAML and formatting, on every commit |
 | CI/CD | **GitHub Actions** (the same works in GitLab CI): checks on every pull request, deploy workflows per environment |
 | Environments | **local** (personal dev schema + local Airflow), **shared dev** on AWS for end-to-end checks, **prod** |
+| Warehouse | **Athena + dbt-athena**, Iceberg tables on S3 (as in Case 1) |
 | Orchestration | **Apache Airflow + Cosmos**: the only place production dbt runs; each model and test is a task |
 | Data quality | **dbt tests**: generic tests in YAML, singular tests, unit tests (in CI), source freshness |
 | Alerting | **Airflow → Slack**: failures tag the on-call person; BI is told when data is delayed |
@@ -87,7 +88,7 @@ GitHub starts a temporary machine, installs the tools, runs the checks, then thr
 1. **Lint** the SQL.
 2. **Download the prod `manifest.json` from S3.** dbt writes this file on every parse; it lists every model with a fingerprint of its code. The prod deploy saves it after each release.
 3. **Compare** the branch with it: `state:modified` finds new or changed models, `+` adds everything downstream.
-4. **Build and test** only those models in a temporary schema, `ci_pr_<number>`, in the prod warehouse. Unchanged parents are read from the prod tables (`--defer`), so the test runs on **real data without touching any prod table**:
+4. **Build and test** only those models in a temporary schema, `ci_pr_<number>`, in the prod Glue catalog. Unchanged parents are read from the prod tables (`--defer`), so the test runs on **real data without touching any prod table**:
 
    ```bash
    dbt build --select state:modified+ --defer --state prod-artifacts --target ci
@@ -99,7 +100,7 @@ GitHub starts a temporary machine, installs the tools, runs the checks, then thr
 Unit tests run in step 4: they use fake input rows from YAML, so they check the logic before merge.
 
 **What this needs, once:**
-- a **`ci` target** ([profiles.yml](templates/dbt/profiles.yml)) and a **CI database user**: read on prod, write on `ci_*` schemas only
+- a **`ci` target** ([profiles.yml](templates/dbt/profiles.yml)) and a **CI IAM role** (assumed through OIDC, no stored secret): read on prod, write on `ci_*` schemas only
 - a **schema macro** ([generate_schema_name.sql](templates/dbt/macros/generate_schema_name.sql)) so custom schemas are used only in prod; in dev and CI everything goes to the target schema
 - the **prod deploy uploads the manifest** ([deploy.yml](templates/.github/workflows/deploy.yml))
 
@@ -207,7 +208,7 @@ The risk with a team new to CI/CD is a pipeline that feels like a gate nobody un
 |---|---|---|
 | Repository | dbt and DAGs in one repository | Same approach per repository, with shared reusable workflows |
 | Airflow | One Airflow per environment (dev, prod), deployed from the repository | Same CI/CD; only the deploy step changes |
-| Warehouse | Separate dev and prod schemas or databases are possible | Separate accounts make isolation even simpler |
+| Warehouse | Dev, CI and prod separated by Glue databases, S3 prefixes and Athena workgroups | Separate AWS accounts make isolation even simpler |
 | Team | 6 people, mixed experience, all writing dbt | Adjust pairing and the pace of the rollout |
 | Criticality | A few pipelines feed key dashboards | Prioritise tests and SLAs on those first |
 
