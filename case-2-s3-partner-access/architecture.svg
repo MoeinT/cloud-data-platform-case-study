@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1420 800" width="1420" height="800" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">
+<defs>
+<symbol id="amazons3" viewBox="0 0 24 24"><path d="M20.913 13.147l.12-.895c.947.576 1.258.922 1.354 1.071-.16.031-.562.046-1.474-.176zm-2.174 7.988a.547.547 0 0 0-.005.073c0 .084-.207.405-1.124.768a10.28 10.28 0 0 1-1.438.432c-1.405.325-3.128.504-4.853.504-4.612 0-7.412-1.184-7.412-1.704a.547.547 0 0 0-.005-.073L1.81 5.602c.135.078.28.154.432.227.042.02.086.038.128.057.134.062.272.122.417.18l.179.069c.154.058.314.114.478.168.043.013.084.029.13.043.207.065.423.127.646.187l.176.044c.175.044.353.087.534.127a23.414 23.414 0 0 0 .843.17l.121.023c.252.045.508.085.768.122.071.011.144.02.216.03.2.027.4.053.604.077l.24.027c.245.026.49.05.74.07l.081.009c.275.022.552.04.83.056l.233.012c.21.01.422.018.633.025a33.088 33.088 0 0 0 2.795-.026l.232-.011c.278-.016.555-.034.83-.056l.08-.008c.25-.02.497-.045.742-.072l.238-.026c.205-.024.408-.05.609-.077.07-.01.141-.019.211-.03.261-.037.519-.078.772-.122l.111-.02c.215-.04.427-.082.634-.125l.212-.047c.186-.041.368-.085.546-.13l.166-.042c.225-.06.444-.122.654-.189.04-.012.077-.026.115-.038a10.6 10.6 0 0 0 .493-.173c.058-.021.114-.044.17-.066.15-.06.293-.12.43-.185.038-.017.079-.034.116-.052.153-.073.3-.15.436-.228l-.976 7.245c-2.488-.78-5.805-2.292-7.311-3a1.09 1.09 0 0 0-1.088-1.085c-.6 0-1.088.489-1.088 1.088 0 .6.488 1.089 1.088 1.089.196 0 .378-.056.537-.148 1.72.812 5.144 2.367 7.715 3.15zm-7.42-20.047c5.677 0 9.676 1.759 9.75 2.736l-.014.113c-.01.033-.031.067-.048.101-.015.028-.026.057-.047.087-.024.033-.058.068-.09.102-.028.03-.051.06-.084.09-.038.035-.087.07-.133.105-.04.03-.074.06-.119.091-.053.036-.116.071-.177.107-.05.03-.095.06-.15.09-.068.036-.147.073-.222.11-.059.028-.114.057-.177.085-.084.038-.177.074-.268.111-.068.027-.13.054-.203.082-.097.036-.205.072-.31.107-.075.026-.148.053-.228.079-.111.035-.233.069-.35.103-.085.024-.165.05-.253.073-.124.034-.258.065-.389.098-.093.022-.181.046-.278.068-.139.032-.287.061-.433.091-.098.02-.191.041-.293.06-.155.03-.32.057-.482.084-.1.018-.198.036-.302.052-.166.026-.342.048-.515.072-.11.014-.213.03-.325.044-.181.023-.372.041-.56.06-.11.012-.218.025-.332.036-.188.016-.386.029-.58.043-.122.009-.24.02-.364.028-.207.012-.422.02-.635.028-.12.005-.234.012-.354.016a35.605 35.605 0 0 1-2.069 0c-.12-.004-.234-.011-.352-.016-.214-.008-.43-.016-.637-.028-.122-.008-.238-.02-.36-.027-.195-.015-.394-.028-.584-.044-.11-.01-.215-.024-.324-.035-.19-.02-.384-.038-.568-.06l-.315-.044c-.176-.024-.355-.046-.525-.073-.1-.015-.192-.033-.29-.05-.167-.028-.335-.055-.494-.086-.096-.018-.183-.038-.276-.056-.151-.032-.305-.062-.45-.095-.09-.02-.173-.043-.26-.064-.138-.034-.277-.067-.407-.102-.082-.022-.157-.046-.235-.069a11.75 11.75 0 0 1-.368-.108c-.075-.024-.141-.049-.213-.073-.11-.037-.223-.075-.325-.113-.067-.025-.125-.051-.188-.077-.096-.038-.195-.076-.282-.115-.06-.027-.11-.054-.166-.08-.08-.039-.162-.077-.233-.116-.052-.028-.094-.055-.142-.084-.063-.038-.13-.075-.185-.113-.043-.029-.075-.058-.113-.086-.048-.037-.098-.073-.139-.11-.032-.029-.054-.057-.08-.087-.033-.035-.069-.07-.093-.104-.02-.03-.031-.058-.046-.086-.018-.035-.039-.068-.049-.102l-.015-.113c.076-.977 4.074-2.736 9.748-2.736zm12.182 12.124c-.118-.628-.84-1.291-2.31-2.128l.963-7.16a.531.531 0 0 0 .005-.073C22.16 1.581 16.447 0 11.32 0 6.194 0 .482 1.581.482 3.851a.58.58 0 0 0 .005.072L2.819 21.25c.071 2.002 5.236 2.75 8.5 2.75 1.805 0 3.615-.188 5.098-.531.598-.138 1.133-.3 1.592-.48 1.18-.467 1.789-1.053 1.813-1.739l.945-7.018c.557.131 1.016.197 1.389.197.54 0 .902-.137 1.134-.413a.956.956 0 0 0 .21-.804Z"/></symbol>
+<symbol id="amazoniam" viewBox="0 0 24 24"><path d="M24 3.4286v17.1428c0 .2572-.1714.4286-.4286.4286H.4286C.1714 21 0 20.8286 0 20.5714V3.4286C0 3.1714.1714 3 .4286 3h23.1428c.2572 0 .4286.1714.4286.4286ZM.8571 20.1429H23.143V3.857H.857Zm12.8572-5.5715h6.4286v.8572h-6.4286ZM19.2857 12h2.1429v.8571h-2.1429zm-5.5714 0h3.4286v.8571h-3.4286ZM2.1429 18.4286v-6.8572q0-.1714.1285-.3.1286-.1285.3-.1285h.8572v-3c0-1.5 1.5428-2.7 3.4285-2.7 1.8858 0 3.4286 1.2 3.4286 2.7v3h.8572c.2571 0 .4285.2142.4285.4285v6.8572q0 .1714-.1285.3-.1286.1285-.3.1285H2.5714c-.2571 0-.4285-.2142-.4285-.4285zM3 18h7.7143v-1.7143H9v-.8571h1.7143v-1.2857H9v-.8572h1.7143V12H3Zm5.1429-3.4286c0 .5572-.3429 1.0286-.8572 1.2v.9429h-.8571v-.9429c-.5143-.1714-.8572-.6428-.8572-1.2 0-.6857.6-1.2857 1.2857-1.2857.7286 0 1.2858.6 1.2858 1.2857zM4.2857 11.143h5.1429v-3c0-.9858-1.2-1.8429-2.5715-1.8429-1.3714 0-2.5714.8571-2.5714 1.8429Zm3 3.4285c0-.2143-.1714-.4285-.4286-.4285-.2142 0-.4285.2142-.4285.4285 0 .2572.2143.4286.4285.4286.2572 0 .4286-.1714.4286-.4286Zm13.2857-5.1428h.8572v.8571h-.8572zm-6.8571 0h4.7143v.8571h-4.7143z"/></symbol>
+<symbol id="awslambda" viewBox="0 0 24 24"><path d="M4.9855 0c-.2941.0031-.5335.2466-.534.5482L4.446 5.456c0 .1451.06.2835.159.3891a.5322.5322 0 0 0 .3806.1562h3.4282l8.197 17.6805a.5365.5365 0 0 0 .4885.3181h5.811c.2969 0 .5426-.2448.5426-.5482V18.544c0-.3035-.2392-.5482-.5425-.5482h-2.0138L12.7394.3153C12.647.124 12.4564 0 12.2452 0h-7.254Zm.5397 1.0907h6.3678l8.16 17.6804a.5365.5365 0 0 0 .4885.3181h1.8178v3.8173H17.437L9.2402 5.226a.536.536 0 0 0-.4885-.318H5.5223Zm2.0137 8.2366c-.2098.0011-.3937.1193-.4857.3096L.6002 23.2133a.5506.5506 0 0 0 .0313.5282.5334.5334 0 0 0 .4544.25h6.169a.5468.5468 0 0 0 .497-.3096l3.38-7.166a.5405.5405 0 0 0-.0029-.4686L8.036 9.637a.5468.5468 0 0 0-.4942-.3096Zm.0057 1.8036 2.488 5.1522-3.1214 6.6206H1.9465Z"/></symbol>
+<symbol id="apacheairflow" viewBox="0 0 24 24"><path d="M17.195 16.822l4.002-4.102C23.55 10.308 23.934 5.154 24 .43a.396.396 0 0 0-.246-.373.392.392 0 0 0-.437.09l-6.495 6.658-4.102-4.003C10.309.45 5.154.066.43 0H.423a.397.397 0 0 0-.277.683l6.658 6.494-4.003 4.103C.45 13.692.065 18.846 0 23.57a.398.398 0 0 0 .683.282l6.494-6.657 3.934 3.837.17.165c2.41 2.353 7.565 2.737 12.288 2.803h.006a.397.397 0 0 0 .277-.683l-6.657-6.495zm-.409-9.476c.04.115.05.24.031.344-.17.96-1.593 2.538-4.304 3.87a.597.597 0 0 0-.08-.079c1.432-3.155 1.828-5.61 1.175-7.322l3.058 2.984.12.203zm-.131 9.44a.73.73 0 0 1-.347.031c-.96-.171-2.537-1.594-3.87-4.307a.656.656 0 0 0 .08-.078l-.001.001c3.155 1.432 5.61 1.83 7.324 1.174l-2.969 3.043M23.568.392a.05.05 0 0 1 .052-.011c.018.006.03.024.029.043-.065 4.655-.437 9.726-2.703 12.05-1.53 1.565-4.326 1.419-8.283-.377.006-.037.021-.07.02-.108 0-.044-.017-.082-.026-.123 2.83-1.39 4.315-3.037 4.506-4.115.057-.322-.009-.542-.102-.688l6.507-6.67V.392zM.393.43A.045.045 0 0 1 .382.38C.39.36.403.343.425.35c4.655.065 9.727.438 12.05 2.703l.002.002c1.56 1.527 1.415 4.323-.379 8.28-.033-.005-.062-.02-.097-.02h-.008c-.045.001-.084.019-.126.027-1.39-2.83-3.037-4.314-4.115-4.506-.323-.057-.542.01-.688.103L.393.43zm11.94 11.563a.331.331 0 0 1-.327.335H12a.332.332 0 0 1-.004-.661c.172.016.333.144.335.326h.002zm-5.12 4.661a.722.722 0 0 1-.03-.345c.17-.96 1.595-2.54 4.309-3.873.013.016.019.035.033.05.013.012.03.017.044.028-1.434 3.158-1.83 5.613-1.177 7.326l-3.041-2.967m-.006-9.659a.735.735 0 0 1 .345-.031c.961.17 2.54 1.594 3.871 4.306a.597.597 0 0 0-.079.08c-2.167-.983-4.007-1.484-5.498-1.484-.68 0-1.289.103-1.825.308L7.128 7.35M.43 23.607c-.018.018-.038.015-.052.01-.019-.007-.028-.021-.028-.043.065-4.654.437-9.725 2.703-12.049 1.527-1.565 4.325-1.419 8.286.378-.006.035-.02.067-.02.104 0 .043.018.083.026.124-2.831 1.391-4.317 3.04-4.51 4.117-.057.322.01.542.103.688L.43 23.607zm23.144.042c-4.655-.065-9.726-.437-12.05-2.703l-.005-.006c-1.56-1.526-1.412-4.322.383-8.279.033.005.064.02.098.02h.009c.043 0 .08-.018.122-.027 1.39 2.832 3.036 4.317 4.115 4.51.083.014.16.021.23.021a.776.776 0 0 0 .45-.133l6.68 6.516c.02.02.016.04.01.052a.042.042 0 0 1-.042.029z"/></symbol>
+<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#232F3E"/></marker>
+</defs>
+<rect width="1420" height="800" fill="#FFFFFF"/>
+<text x="30" y="40" font-size="22" font-weight="700" fill="#232F3E" text-anchor="start">Case 2 · External partners dropping files into S3</text>
+<text x="30" y="66" font-size="14" font-weight="400" fill="#5F6B7A" text-anchor="start">No long-lived credentials where avoidable. One identity and one folder per partner. Write-only.</text>
+<text x="30" y="98" font-size="11" font-weight="700" fill="#5F6B7A" text-anchor="start">PARTNER</text>
+<text x="420" y="98" font-size="11" font-weight="700" fill="#5F6B7A" text-anchor="start">HOW THEY GET ACCESS (OUR ACCOUNT)</text>
+<text x="840" y="98" font-size="11" font-weight="700" fill="#5F6B7A" text-anchor="start">OUR AWS ACCOUNT</text>
+<rect x="30" y="112" width="300" height="128" rx="10" fill="#FFFFFF" stroke="#9AA0A6" stroke-width="1.5"/>
+<rect x="46" y="148" width="56" height="56" rx="6" fill="#DD344C"/>
+<use href="#amazoniam" xlink:href="#amazoniam" x="56.08" y="158.08" width="35.84" height="35.84" fill="#FFFFFF"/>
+<text x="118" y="158" font-size="13" font-weight="700" fill="#232F3E" text-anchor="start">AWS partner (account B)</text>
+<text x="118" y="177" font-size="13" font-weight="400" fill="#232F3E" text-anchor="start">their own IAM role</text>
+<text x="118" y="196" font-size="13" font-weight="400" fill="#232F3E" text-anchor="start">AssumeRole + our external ID</text>
+<rect x="30" y="262" width="300" height="128" rx="10" fill="#FFFFFF" stroke="#9AA0A6" stroke-width="1.5"/>
+<rect x="46" y="298" width="56" height="56" rx="6" fill="#5F6B7A"/>
+<text x="74.0" y="330.0" font-size="13" font-weight="700" fill="#FFFFFF" text-anchor="middle">SFTP</text>
+<text x="118" y="308" font-size="13" font-weight="700" fill="#232F3E" text-anchor="start">Non-AWS partner</text>
+<text x="118" y="327" font-size="13" font-weight="400" fill="#232F3E" text-anchor="start">any standard SFTP client</text>
+<text x="118" y="346" font-size="13" font-weight="400" fill="#232F3E" text-anchor="start">SSH key, no AWS account</text>
+<rect x="30" y="412" width="300" height="128" rx="10" fill="#FFFFFF" stroke="#9AA0A6" stroke-width="1.5"/>
+<rect x="46" y="448" width="56" height="56" rx="6" fill="#5F6B7A"/>
+<text x="74.0" y="480.0" font-size="13" font-weight="700" fill="#FFFFFF" text-anchor="middle">HTTP</text>
+<text x="118" y="458" font-size="13" font-weight="700" fill="#232F3E" text-anchor="start">Non-AWS application</text>
+<text x="118" y="477" font-size="13" font-weight="400" fill="#232F3E" text-anchor="start">asks us for an upload link,</text>
+<text x="118" y="496" font-size="13" font-weight="400" fill="#232F3E" text-anchor="start">then uploads with HTTP PUT</text>
+<rect x="420" y="112" width="330" height="128" rx="10" fill="#F7F8FA" stroke="#5F6B7A" stroke-width="1.5"/>
+<rect x="436" y="148" width="56" height="56" rx="6" fill="#DD344C"/>
+<use href="#amazoniam" xlink:href="#amazoniam" x="446.08" y="158.08" width="35.84" height="35.84" fill="#FFFFFF"/>
+<text x="508" y="158" font-size="13" font-weight="700" fill="#232F3E" text-anchor="start">Our role: partner-a-upload</text>
+<text x="508" y="177" font-size="13" font-weight="400" fill="#232F3E" text-anchor="start">trust: their role + external ID</text>
+<text x="508" y="196" font-size="13" font-weight="400" fill="#232F3E" text-anchor="start">temporary credentials (1 h)</text>
+<rect x="420" y="262" width="330" height="128" rx="10" fill="#F7F8FA" stroke="#5F6B7A" stroke-width="1.5"/>
+<rect x="436" y="298" width="56" height="56" rx="6" fill="#8C4FFF"/>
+<text x="464.0" y="330.0" font-size="13" font-weight="700" fill="#FFFFFF" text-anchor="middle">SFTP</text>
+<text x="508" y="308" font-size="13" font-weight="700" fill="#232F3E" text-anchor="start">AWS Transfer Family (SFTP)</text>
+<text x="508" y="327" font-size="13" font-weight="400" fill="#232F3E" text-anchor="start">one user per partner</text>
+<text x="508" y="346" font-size="13" font-weight="400" fill="#232F3E" text-anchor="start">locked to its home folder</text>
+<rect x="420" y="412" width="330" height="128" rx="10" fill="#F7F8FA" stroke="#5F6B7A" stroke-width="1.5"/>
+<rect x="436" y="448" width="56" height="56" rx="6" fill="#ED7100"/>
+<use href="#awslambda" xlink:href="#awslambda" x="446.08" y="458.08" width="35.84" height="35.84" fill="#FFFFFF"/>
+<text x="508" y="458" font-size="13" font-weight="700" fill="#232F3E" text-anchor="start">Upload-link API (Lambda)</text>
+<text x="508" y="477" font-size="13" font-weight="400" fill="#232F3E" text-anchor="start">authenticates the partner</text>
+<text x="508" y="496" font-size="13" font-weight="400" fill="#232F3E" text-anchor="start">returns a pre-signed URL (15 min)</text>
+<line x1="332" y1="176.0" x2="418" y2="176.0" stroke="#232F3E" stroke-width="2" marker-end="url(#arr)"/>
+<text x="375.0" y="167.0" font-size="11" font-weight="400" fill="#5F6B7A" text-anchor="middle">AssumeRole</text>
+<line x1="332" y1="326.0" x2="418" y2="326.0" stroke="#232F3E" stroke-width="2" marker-end="url(#arr)"/>
+<text x="375.0" y="317.0" font-size="11" font-weight="400" fill="#5F6B7A" text-anchor="middle">SFTP upload</text>
+<line x1="332" y1="476.0" x2="418" y2="476.0" stroke="#232F3E" stroke-width="2" marker-end="url(#arr)"/>
+<text x="375.0" y="467.0" font-size="11" font-weight="400" fill="#5F6B7A" text-anchor="middle">1. get link</text>
+<rect x="840" y="112" width="300" height="428" rx="10" fill="#F2F7EC" stroke="#7AA116" stroke-width="1.5"/>
+<path d="M840 122 a10 10 0 0 1 10 -10 h280 a10 10 0 0 1 10 10 v20 h-300 z" fill="#7AA116"/>
+<text x="990.0" y="132" font-size="12" font-weight="700" fill="#FFFFFF" text-anchor="middle">PARTNER INBOUND BUCKET</text>
+<rect x="962.0" y="156" width="56" height="56" rx="6" fill="#7AA116"/>
+<use href="#amazons3" xlink:href="#amazons3" x="972.08" y="166.08" width="35.84" height="35.84" fill="#FFFFFF"/>
+<rect x="862" y="228" width="80" height="24" rx="5" fill="#FFFFFF" stroke="#7AA116"/>
+<text x="902" y="245" font-size="12" font-weight="400" fill="#232F3E" text-anchor="middle">partner-a/</text>
+<rect x="950" y="228" width="80" height="24" rx="5" fill="#FFFFFF" stroke="#7AA116"/>
+<text x="990" y="245" font-size="12" font-weight="400" fill="#232F3E" text-anchor="middle">partner-b/</text>
+<rect x="1038" y="228" width="80" height="24" rx="5" fill="#FFFFFF" stroke="#7AA116"/>
+<text x="1078" y="245" font-size="12" font-weight="400" fill="#232F3E" text-anchor="middle">partner-c/</text>
+<text x="862" y="288" font-size="12" font-weight="700" fill="#232F3E" text-anchor="start">Guardrails for everyone (bucket policy)</text>
+<text x="862" y="308" font-size="12" font-weight="400" fill="#232F3E" text-anchor="start">Block Public Access · ACLs disabled</text>
+<text x="862" y="328" font-size="12" font-weight="400" fill="#232F3E" text-anchor="start">HTTPS only · encrypted by default</text>
+<text x="862" y="348" font-size="12" font-weight="400" fill="#232F3E" text-anchor="start">each partner: write-only, own folder</text>
+<text x="862" y="368" font-size="12" font-weight="400" fill="#232F3E" text-anchor="start">versioning · lifecycle (e.g. 30 days)</text>
+<text x="862" y="408" font-size="12" font-weight="700" fill="#232F3E" text-anchor="start">Monitoring</text>
+<text x="862" y="428" font-size="12" font-weight="400" fill="#232F3E" text-anchor="start">CloudTrail data events</text>
+<text x="862" y="448" font-size="12" font-weight="400" fill="#232F3E" text-anchor="start">IAM Access Analyzer</text>
+<text x="862" y="468" font-size="12" font-weight="400" fill="#232F3E" text-anchor="start">alert on denied requests</text>
+<line x1="752" y1="176.0" x2="838" y2="176.0" stroke="#232F3E" stroke-width="2" marker-end="url(#arr)"/>
+<text x="795.0" y="167.0" font-size="11" font-weight="400" fill="#5F6B7A" text-anchor="middle">PutObject</text>
+<line x1="752" y1="326.0" x2="838" y2="326.0" stroke="#232F3E" stroke-width="2" marker-end="url(#arr)"/>
+<text x="795.0" y="317.0" font-size="11" font-weight="400" fill="#5F6B7A" text-anchor="middle">writes</text>
+<path d="M180 540 V568 H990 V542" fill="none" stroke="#232F3E" stroke-width="2" marker-end="url(#arr)"/>
+<text x="585" y="588" font-size="11" font-weight="400" fill="#5F6B7A" text-anchor="middle">2. PUT the file straight to S3 with the link (no AWS credentials)</text>
+<rect x="1200" y="252" width="190" height="150" rx="10" fill="#E8F4FD" stroke="#017CEE" stroke-width="1.5"/>
+<use href="#apacheairflow" xlink:href="#apacheairflow" x="1271" y="266" width="48" height="48" fill="#017CEE"/>
+<text x="1295" y="336" font-size="12" font-weight="700" fill="#232F3E" text-anchor="middle">Our pipeline</text>
+<text x="1295" y="354" font-size="12" font-weight="400" fill="#232F3E" text-anchor="middle">validate, then load</text>
+<text x="1295" y="372" font-size="12" font-weight="400" fill="#232F3E" text-anchor="middle">into the data lake</text>
+<line x1="1142" y1="327" x2="1198" y2="327" stroke="#232F3E" stroke-width="2" marker-end="url(#arr)"/>
+<text x="1170.0" y="318" font-size="11" font-weight="400" fill="#5F6B7A" text-anchor="middle">new file</text>
+<rect x="30" y="620" width="1360" height="160" rx="8" fill="#FAFAFA" stroke="#9AA0A6" stroke-width="1" stroke-dasharray="6 4"/>
+<text x="50" y="650" font-size="13" font-weight="700" fill="#232F3E" text-anchor="start">STRICTLY ONLY WHAT THEY NEED · applies to every partner</text>
+<text x="50" y="690" font-size="13" font-weight="400" fill="#232F3E" text-anchor="start">• one identity per partner (role or SFTP user)</text>
+<text x="50" y="724" font-size="13" font-weight="400" fill="#232F3E" text-anchor="start">• write-only (PutObject) on its own folder</text>
+<text x="50" y="758" font-size="13" font-weight="400" fill="#232F3E" text-anchor="start">• no List, Get or Delete unless needed</text>
+<text x="500" y="690" font-size="13" font-weight="400" fill="#232F3E" text-anchor="start">• deny rules in the bucket policy, for everyone</text>
+<text x="500" y="724" font-size="13" font-weight="400" fill="#232F3E" text-anchor="start">• separate inbound bucket, away from the data lake</text>
+<text x="500" y="758" font-size="13" font-weight="400" fill="#232F3E" text-anchor="start">• short sessions; external ID for third parties</text>
+<text x="950" y="690" font-size="13" font-weight="400" fill="#232F3E" text-anchor="start">• audit: CloudTrail data events, Access Analyzer</text>
+<text x="950" y="724" font-size="13" font-weight="400" fill="#232F3E" text-anchor="start">• offboarding: delete one role or one user</text>
+<text x="950" y="758" font-size="13" font-weight="400" fill="#232F3E" text-anchor="start">• IAM user + access keys: last resort only</text>
+</svg>

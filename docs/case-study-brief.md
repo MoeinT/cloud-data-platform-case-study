@@ -180,7 +180,7 @@ Answer the questions in the domains that match your experience. No need to cover
 ## My selection
 
 - [x] Case 1: Data architecture for a startup *(mandatory)*
-- [ ] Case 2: S3 authentication & authorisation
+- [x] Case 2: S3 authentication & authorisation
 - [ ] Case 3: Serverless webhook → S3
 - [ ] Case 4: Snowflake performance & cost
 - [x] Case 5: DataOps for dbt + Airflow

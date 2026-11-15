@@ -5,8 +5,8 @@ Answers to the *Cloud Data Platform Engineer* case study.
 | Case | Topic | Folder |
 |---|---|---|
 | 1 *(mandatory)* | Data architecture for a startup | [case-1-startup-data-stack](case-1-startup-data-stack/README.md) |
+| 2 | Authentication and authorisation on S3 | [case-2-s3-partner-access](case-2-s3-partner-access/README.md) |
 | 5 | DataOps for a dbt + Airflow team | [case-5-dataops-dbt-airflow](case-5-dataops-dbt-airflow/README.md) |
-| _TBD_ | | |
 
 The original brief (translated to English) is in [docs/case-study-brief.md](docs/case-study-brief.md).
 
